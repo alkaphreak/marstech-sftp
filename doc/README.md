@@ -435,6 +435,84 @@ In the `sftpContainer` method, we will perform several steps:
 - Map the container's message output to our `Logger` instance.
 - Retrieve the SFTP/SSH port directly from the container for our `SftpContainer` instance.
 
+## Going native
+
+### Le Pourquoi
+
+Dans le but d'accélérer les temps de chargements de l'application et de diminuer l'empreinte mémoire, nous pouvons
+utiliser **GraalVM** pour générer des Jars autoexecutable sans nécessiter la présence d'une JVM sur l'environement
+cible. Ces Jars sont particulièrement interessants quand on cible des environement dockerisé.
+
+### Preréquis
+
+Il sera nécessaire d'avoir une JVM compatible avec la compilation native. À l'écriture de cet article, nous utiliserons
+cette version :
+
+```shell
+openjdk version "20.0.1" 2023-04-18
+OpenJDK Runtime Environment Liberica-NIK-23.0.0-1 (build 20.0.1+10)
+OpenJDK 64-Bit Server VM Liberica-NIK-23.0.0-1 (build 20.0.1+10, mixed mode, sharing)
+```
+
+Il est possible de basculer rapidement entre différentes versions de JVM, de les mettre à jour en fonction des besoins
+en utilisant un outil très pratique, **SDKMAN!**. Après avoir suivi la procédure
+d'installation (https://sdkman.io/install) :
+
+```shell
+# Will install the Liberica Native Image Kit JDK 20
+sdk install java 23.r20-nik
+
+# Will set this version as default on future terminal and session opening for this user
+sdk default java 23.r20-nik
+
+# Will use this version in the current terminal
+sdk use java 23.r20-nik
+
+# To confirm the version
+java -version
+```
+
+### Build Gradle
+
+In the `build.gradle.kts` file in the `plugins` part we need to add this line :
+
+```kotlin
+id("org.graalvm.buildtools.native") version "0.9.27"
+```
+
+In the terminal, running this command will launch the native compilation :
+
+```shell
+gradle nativeCompile
+```
+
+Note the message that display where is stored our native image:
+
+```shell
+Produced artifacts:
+ /myWorkspace/my-project/build/native/nativeCompile/my-app (executable)
+```
+
+If everything goes right we can launch our app with this command in the terminal:
+
+```shell
+/myWorkspace/my-project/build/native/nativeCompile/my-app
+```
+
+It will display something like that :
+
+```shell
+2023-10-20T10:52:48.995+02:00  INFO 82280 --- [           main] com.company.myapp.MtSftpApplicationKt   : Starting AOT-processed MtSftpApplicationKt using Java 20.0.1 with PID 82280 (/myWorkspace/my-project/build/native/nativeCompile/my-app started by myUser in /myWorkspace/my-project)
+2023-10-20T10:52:48.995+02:00  INFO 82280 --- [           main] com.company.myapp.MtSftpApplicationKt   : No active profile set, falling back to 1 default profile: "default"
+2023-10-20T10:52:49.009+02:00  INFO 82280 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port(s): 8080 (http)
+2023-10-20T10:52:49.010+02:00  INFO 82280 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2023-10-20T10:52:49.010+02:00  INFO 82280 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.13]
+2023-10-20T10:52:49.016+02:00  INFO 82280 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2023-10-20T10:52:49.016+02:00  INFO 82280 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 20 ms
+2023-10-20T10:52:49.034+02:00  INFO 82280 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port(s): 8080 (http) with context path ''
+2023-10-20T10:52:49.034+02:00  INFO 82280 --- [           main] com.company.myapp.MtSftpApplicationKt   : Started MtSftpApplicationKt in 0.05 seconds (process running for 0.053)
+```
+
 ## Conclusions
 
 In conclusion, we have covered the various steps to use JSch for sending and receiving files with an SSH/SFTP server.
@@ -444,7 +522,7 @@ conducting our send/receive tests.
 
 ## Resources
 
-To further expand your knowledge in this area:
+To further expand your knowledge:
 
 * https://www.whoz.com/fr/
 * https://github.com/mwiede/jsch
@@ -452,4 +530,8 @@ To further expand your knowledge in this area:
 * https://www.ssh.com/academy/ssh/sftp-ssh-file-transfer-protocol
 * https://linuxize.com/post/how-to-use-linux-sftp-command-to-transfer-files/
 * https://testcontainers.com/guides/getting-started-with-testcontainers-for-java/
+* https://engineering.zalando.com/posts/2021/02/integration-tests-with-testcontainers.html
 * https://hub.docker.com/r/atmoz/sftp
+* https://docs.spring.io/spring-boot/docs/current/reference/html/native-image.html
+* https://www.baeldung.com/spring-native-intro
+* https://sdkman.io/

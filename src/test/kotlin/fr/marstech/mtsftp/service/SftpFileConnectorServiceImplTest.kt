@@ -12,8 +12,10 @@ import org.testcontainers.containers.output.Slf4jLogConsumer
 import org.testcontainers.images.PullPolicy
 import org.testcontainers.images.builder.Transferable
 import org.testcontainers.utility.DockerImageName
+import org.testcontainers.utility.LogUtils
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.*
 import kotlin.io.path.Path
 import kotlin.io.path.exists
@@ -27,9 +29,11 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
     lateinit var sftpContainer: SftpContainer
     lateinit var knownHostsFilePathString: String
     lateinit var connectionStrategy: ConnectionStrategy
+    lateinit var instanceUUID: String
 
     override suspend fun beforeTest(testCase: TestCase) {
         super.beforeTest(testCase)
+        instanceUUID = "68928936-327b-4335-ac43-f6b27b00c881"
 
         sftpContainer = sftpContainer()
         knownHostsFilePathString = resourceLoader.getResource("classpath:ssh/known_hosts").file.toPath().toString()
@@ -65,7 +69,7 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
         }
     }
 
-    fun sftpContainer(): SftpContainer = SftpContainer(DockerImageName.parse("atmoz/sftp"), null)
+    fun sftpContainer(): SftpContainer = SftpContainer(DockerImageName.parse("atmoz/sftp"))
         .withCopyToContainer(
             Transferable.of(
                 resourceLoader.getResource("classpath:ssh/ssh_host_ed25519_key").contentAsByteArray,
@@ -82,13 +86,20 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
             "/home/${SFTP_USERNAME_TEST}/.ssh/keys/id_ed25519_client.pub"
         )
         .withEnv("SFTP_USERS", "${SFTP_USERNAME_TEST}::1001::share")
+        .withTmpFs(makeTmpFs(instanceUUID))
         .withCommand("/bin/sh", "-c", buildString { append("exec /usr/sbin/sshd -D -e") })
         .withExposedPorts(22)
-        .withImagePullPolicy(PullPolicy.alwaysPull())
+        .withImagePullPolicy(PullPolicy.ageBased(Duration.ofDays(30)))
         .withStartupAttempts(1)
+        .withReuse(true)
+        .withLabel("reuse.UUID", instanceUUID)
         .apply {
             start()
-            followOutput(Slf4jLogConsumer(logger).withSeparateOutputStreams())
+            LogUtils.followOutput(
+                this.dockerClient,
+                this.containerId,
+                Slf4jLogConsumer(logger).withSeparateOutputStreams()
+            )
             sftpPort = getMappedPort(22)
         }
 
@@ -98,14 +109,21 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
         const val SFTP_USERNAME_TEST = "foo"
     }
 
+    private fun createInputTempFile(): Path = Files.createTempFile(
+        Files.createTempDirectory("files-in"),
+        "file-in",
+        null
+    )
+
+    private fun createOutputTempDirectory(): Path = Files.createTempDirectory("files-out")
+
+    private fun makeTmpFs(folderName: String): MutableMap<String, String> = Collections.singletonMap(
+        Files.createTempDirectory(folderName).toString(),
+        "rw"
+    )
+
     class SftpContainer(
         dockerImageName: DockerImageName,
         var sftpPort: Int? = null
     ) : GenericContainer<SftpContainer>(dockerImageName)
-
-    fun createInputTempFile(): Path = Files.createTempFile(
-        Files.createTempDirectory("files-in"), "file-in", null
-    )
-
-    fun createOutputTempDirectory(): Path = Files.createTempDirectory("files-out")
 }
