@@ -9,7 +9,10 @@ import kotlin.io.path.pathString
 
 class SftpConnectionImpl(private val session: Session) : Connection {
 
-    private fun channelSftp() = (session.openChannel("sftp").apply { connect() } as ChannelSftp)
+    private fun channelSftp(): ChannelSftp = (
+            session.openChannel("sftp")
+                .apply { connect() } as ChannelSftp
+            )
 
     override fun uploadFile(localFilePath: Path, remoteFilePath: Path) {
         channelSftp().apply {
