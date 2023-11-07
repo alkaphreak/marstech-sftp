@@ -51,9 +51,9 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
                 .resolve("${UUID.randomUUID()}.tmp")
             val downloadedFilePath: Path = createOutputTempDirectory()
                 .resolve(remoteFilePath.fileName)
-            val connection: Connection = SftpFileConnectorServiceImpl()
-                .apply { knownHostsFilePath = knownHostsFilePathString }
-                .connect(connectionStrategy)
+            val connection: Connection = SftpFileConnectorServiceImpl(
+                knownHostsFilePath = knownHostsFilePathString
+            ).connect(connectionStrategy)
 
             // When
             connection.uploadFile(

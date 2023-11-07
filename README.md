@@ -1,6 +1,11 @@
 # marstech-sftp
 
-Test implem of **JSch** with **Kotlin**, **Kotest**, **Testcontainers** and **Spring boot Native**
+## Efficient SFTP Testing with JSch, Kotlin, Testcontainers, and Spring Boot Native
+
+Explore a streamlined approach to testing SFTP operations using JSch, Kotlin, Testcontainers,
+and the power of Spring Boot Native for optimized performance.
+
+## Table of contents
 
 1. [JSCH Howto](doc/Jsch.md)
 2. [JSCH testing and TestContainers Howto](doc/Testing.md)

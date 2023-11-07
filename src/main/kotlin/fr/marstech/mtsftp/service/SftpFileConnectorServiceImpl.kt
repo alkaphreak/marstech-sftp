@@ -4,10 +4,10 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
-class SftpFileConnectorServiceImpl : FileConnectorService {
-
+class SftpFileConnectorServiceImpl(
     @Value("\${mtsftp.knownHosts:''}")
-    lateinit var knownHostsFilePath: String
+    var knownHostsFilePath: String
+) : FileConnectorService {
 
     override fun connect(strategy: ConnectionStrategy): Connection = when (strategy) {
         is SftpPasswordConnectionStrategyImpl -> SftpConnectionImpl(strategy.connect(knownHostsFilePath))

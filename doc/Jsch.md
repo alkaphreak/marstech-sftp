@@ -1,6 +1,9 @@
-# SFTP implem
+# Efficient SFTP Testing with JSch, Kotlin, Testcontainers, and Spring Boot Native
 
-Test implem of **JSch** with **Kotlin**, **Testcontainers** and **Spring boot Native**
+Explore a streamlined approach to testing SFTP operations using JSch, Kotlin, Testcontainers,
+and the power of Spring Boot Native for optimized performance.
+
+![](./_581eecca-b8b1-4c0d-a3b5-ced1e3d57411.jpeg)
 
 ## Context
 
@@ -77,7 +80,7 @@ interface ConnectionStrategy {
 
 ### FileConnectorService
 
-Our service reusing the ConnectionStrategy.
+Our service reusing the `ConnectionStrategy`.
 
 ```kotlin
 interface FileConnectorService {
@@ -97,14 +100,16 @@ import com.jcraft.jsch.Session
 import mu.KLogging
 import java.nio.file.Path
 import java.util.stream.Stream
+import javax.management.remote.JMXConnectorFactory.connect
+import javax.swing.UIManager.put
 import kotlin.io.path.pathString
 
 class SftpConnectionImpl(private val session: Session) : Connection {
 
-    private fun channelSftp(): ChannelSftp = (
-            session.openChannel("sftp")
-                .apply { connect() } as ChannelSftp
-            )
+    private fun channelSftp(): ChannelSftp =
+        session.openChannel("sftp")
+            .apply { connect() } as ChannelSftp
+
 
     override fun uploadFile(localFilePath: Path, remoteFilePath: Path) {
         channelSftp().apply {
@@ -242,21 +247,15 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
-class SftpFileConnectorServiceImpl : FileConnectorService {
-
+class SftpFileConnectorServiceImpl(
     @Value("\${mtsftp.knownHosts:''}")
-    lateinit var knownHostsFilePath: String
+    var knownHostsFilePath: String
+) : FileConnectorService {
 
     override fun connect(strategy: ConnectionStrategy): Connection = when (strategy) {
-        is SftpPasswordConnectionStrategyImpl -> SftpConnectionImpl(
-            strategy.connect(knownHostsFilePath)
-        )
-        is SftpPrivateKeyConnectionStrategyImpl -> SftpConnectionImpl(
-            strategy.connect(knownHostsFilePath)
-        )
-        else -> throw UnsupportedOperationException(
-            "Unsupported connection strategy: $strategy"
-        )
+        is SftpPasswordConnectionStrategyImpl -> SftpConnectionImpl(strategy.connect(knownHostsFilePath))
+        is SftpPrivateKeyConnectionStrategyImpl -> SftpConnectionImpl(strategy.connect(knownHostsFilePath))
+        else -> throw UnsupportedOperationException("Unsupported connection strategy: $strategy")
     }
 }
 ```
@@ -281,6 +280,7 @@ We have a way to do basic SFTP action:
 
 From here, we can start using our service to perform our first file transfers with an existing SSH server.
 
-In the next section, we will test our service using an on-the-fly provisioned SSH server.
+In the next part, we will test our service using an on-the-fly provisioned SSH servern and in this manner, we can create
+an initial usage example.
 
 [JSCH testing and TestContainers Howto](./Testing.md)
