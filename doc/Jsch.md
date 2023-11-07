@@ -4,6 +4,7 @@ Explore a streamlined approach to testing SFTP operations using JSch, Kotlin, Te
 and the power of Spring Boot Native for optimized performance.
 
 ![](./_581eecca-b8b1-4c0d-a3b5-ced1e3d57411.jpeg)
+*Credit: https://www.bing.com/?FORM=GENBHP*
 
 ## Context
 
