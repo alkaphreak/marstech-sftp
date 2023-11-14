@@ -32,7 +32,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.11")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    implementation("com.github.mwiede:jsch:0.2.12")
+    implementation("com.github.mwiede:jsch:0.2.13")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
