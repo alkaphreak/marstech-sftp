@@ -10,6 +10,7 @@ and the power of Spring Boot Native for optimized performance.
 1. [JSCH Howto](doc/Jsch.md)
 2. [JSCH testing and TestContainers Howto](doc/Testing.md)
 3. [Going Native Howto](doc/Native.md)
+4. [Tests containers, going further](doc/TODO)
 
 ## Conclusions
 
@@ -43,3 +44,8 @@ To further expand your knowledge
 * https://docs.spring.io/spring-boot/docs/current/reference/html/native-image.html
 * https://www.baeldung.com/spring-native-intro
 * https://sdkman.io/
+
+### Tests Containers
+
+* https://kotest.io/docs/framework/lifecycle-hooks.html
+* 
