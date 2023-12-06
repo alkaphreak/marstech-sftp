@@ -12,19 +12,8 @@ class RedisContainer(
     dockerImageName: String = IMAGE,
 ) : GenericContainer<RedisContainer>(dockerImageName) {
 
-    private fun getPool(): JedisPool {
-        return JedisPool(
-            JedisPoolConfig(),
-            this.host,
-            this.getMappedPort(PORT)
-        )
-    }
-
-    private fun closePool() = getPool().close()
-
-    private fun getResource(): Jedis = getPool().resource
-
     fun getFreeInstanceUUID(type: String, mapper: ObjectMapper): String {
+        logger.info { "Get free instance UUID" }
         val instanceUUID: String
         getResource().use { jedis: Jedis ->
             when {
@@ -73,6 +62,18 @@ class RedisContainer(
         }
         closePool()
     }
+
+    private fun getPool(): JedisPool {
+        return JedisPool(
+            JedisPoolConfig(),
+            this.host,
+            this.getMappedPort(PORT)
+        )
+    }
+
+    private fun closePool() = getPool().close()
+
+    private fun getResource(): Jedis = getPool().resource
 
     private fun killInstance(type: String, containerInstance: ContainerInstance) {
         logger.info { "Should kill instance: $containerInstance" }
