@@ -54,7 +54,7 @@ class RedisContainer(
                 popLock(jedis, type, mapper).also {
                     when {
                         it.isInstanceLockTimeStampExpired() -> pushFree(jedis, type, mapper, it)
-                        it.isInstanceCreationTimeStampExpired() -> killInstance(type, it)
+                        it.isInstanceCreationTimeStampExpired() -> killInstance(it)
                         else -> pushLock(jedis, type, mapper, it)
                     }
                 }
@@ -75,9 +75,20 @@ class RedisContainer(
 
     private fun getResource(): Jedis = getPool().resource
 
-    private fun killInstance(type: String, containerInstance: ContainerInstance) {
+    private fun killInstance(containerInstance: ContainerInstance) {
         logger.info { "Should kill instance: $containerInstance" }
-        GenericContainer(type).startOrReuseUniqueInstance(containerInstance.instanceUUID).stop()
+        killInstance(containerInstance.instanceUUID)
+    }
+
+    fun killInstance(instanceUUID: String) {
+        DockerUtils.getContainerFromLabel(
+            getReuseLabel(), instanceUUID
+        ).run {
+            if (this != null) {
+                DockerUtils.stopContainer(this.id)
+                DockerUtils.killContainer(this.id)
+            }
+        }
     }
 
     private fun popLock(

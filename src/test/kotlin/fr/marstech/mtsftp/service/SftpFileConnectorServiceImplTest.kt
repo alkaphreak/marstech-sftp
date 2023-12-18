@@ -155,6 +155,11 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
                     instanceUUID = it
                 )
             }
+
+            redisContainer.killInstance(
+                redisContainer.getFreeInstanceUUID(type = SftpContainer.TYPE, mapper = objectMapper)
+                    .also {}
+            )
         }
     }
 

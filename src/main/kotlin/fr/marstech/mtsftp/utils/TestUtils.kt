@@ -26,6 +26,8 @@ fun makeTmpFs(folderName: String): MutableMap<String, String> =
         "rw"
     )
 
+fun getReuseLabel(): String = "reuse.UUID"
+
 fun GenericContainer<*>.startOrReuseUniqueInstance(
     instanceUUID: String? = null,
     tmpFolderName: String? = null,
@@ -41,7 +43,7 @@ fun GenericContainer<*>.startOrReuseUniqueInstance(
     withImagePullPolicy(PullPolicy.ageBased(Duration.ofDays(30)))
     withStartupAttempts(1)
     withReuse(true)
-    withLabel("reuse.UUID", instanceUUID)
+    withLabel(getReuseLabel(), instanceUUID)
     start()
     if (logger != null) {
         LogUtils.followOutput(
