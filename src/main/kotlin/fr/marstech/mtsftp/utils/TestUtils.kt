@@ -1,5 +1,7 @@
 package fr.marstech.mtsftp.utils
 
+import io.github.oshai.kotlinlogging.DelegatingKLogger
+import io.github.oshai.kotlinlogging.KLogger
 import org.slf4j.Logger
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.output.Slf4jLogConsumer
@@ -54,3 +56,14 @@ fun GenericContainer<*>.startOrReuseUniqueInstance(
     }
     return this
 }
+
+// Extension function to safely convert KLogger to org.slf4j.Logger using reflection
+fun KLogger.toSlf4j(): Logger {
+    val kLoggerClass = this::class.java
+    val field = kLoggerClass.superclass.getDeclaredField("logger")
+    field.isAccessible = true
+    return (field.get(this) as? Logger)!!
+}
+
+@Suppress("UNCHECKED_CAST")
+fun KLogger.toSlf4j2(): Logger = (this as DelegatingKLogger<Logger>).underlyingLogger

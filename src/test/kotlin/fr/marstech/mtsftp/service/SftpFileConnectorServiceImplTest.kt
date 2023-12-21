@@ -3,6 +3,8 @@ package fr.marstech.mtsftp.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import fr.marstech.mtsftp.utils.*
 import fr.marstech.mtsftp.utils.SftpContainer.Companion.SFTP_USERNAME_TEST
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.core.test.TestCase
@@ -11,7 +13,6 @@ import io.kotest.extensions.spring.SpringExtension
 import io.kotest.extensions.spring.SpringTestExtension
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import mu.KLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.core.io.DefaultResourceLoader
@@ -22,6 +23,7 @@ import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isRegularFile
 
+private val logger: KLogger = KotlinLogging.logger {}
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SftpFileConnectorServiceImplTest : StringSpec() {
@@ -48,7 +50,7 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
         redisContainer = RedisContainer().startOrReuseUniqueInstance(
             instanceUUID = RedisContainer.INSTANCE_UUID,
             exposedPorts = intArrayOf(RedisContainer.PORT),
-            logger = logger
+            logger = logger.toSlf4j2()
         ) as RedisContainer
     }
 
@@ -62,7 +64,7 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
         sftpContainer = (SftpContainer().startOrReuseUniqueInstance(
             instanceUUID = instanceUUID,
             exposedPorts = intArrayOf(SftpContainer.PORT),
-            logger = logger
+            logger = logger.toSlf4j2()
         ) as SftpContainer).also {
             it.instanceUUID = instanceUUID
         }
@@ -162,6 +164,4 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
             )
         }
     }
-
-    companion object : KLogging()
 }

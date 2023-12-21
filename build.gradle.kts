@@ -1,12 +1,12 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.1.4"
-    id("io.spring.dependency-management") version "1.1.3"
-    id("org.graalvm.buildtools.native") version "0.9.27"
-    kotlin("jvm") version "1.8.22"
-    kotlin("plugin.spring") version "1.8.22"
-    kotlin("plugin.noarg") version "1.8.22"
+    id("org.springframework.boot") version "3.2.1"
+    id("io.spring.dependency-management") version "1.1.4"
+    id("org.graalvm.buildtools.native") version "0.9.28"
+    kotlin("jvm") version "1.9.21"
+    kotlin("plugin.spring") version "1.9.21"
+    kotlin("plugin.noarg") version "1.9.21"
 }
 
 group = "fr.marstech"
@@ -30,7 +30,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("io.github.microutils:kotlin-logging-jvm:2.0.11")
+
+    // https://mvnrepository.com/artifact/io.github.oshai/kotlin-logging-jvm
+    implementation("io.github.oshai:kotlin-logging-jvm:6.0.1")
+
     implementation("com.github.mwiede:jsch:0.2.13")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")

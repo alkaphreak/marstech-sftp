@@ -1,12 +1,14 @@
 package fr.marstech.mtsftp.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import mu.KLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.testcontainers.containers.GenericContainer
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.JedisPoolConfig
 import java.time.Instant
+
+private val logger = KotlinLogging.logger {}
 
 class RedisContainer(
     dockerImageName: String = IMAGE,
@@ -139,7 +141,7 @@ class RedisContainer(
 
     private fun typeFree(type: String) = "$type-free"
 
-    companion object : KLogging() {
+    companion object {
         const val INSTANCE_UUID: String = "ad4ad799-ae9e-453e-8deb-8b777ec521d3"
         const val IMAGE: String = "redis:alpine"
         const val PORT: Int = 6379
