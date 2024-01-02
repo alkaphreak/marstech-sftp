@@ -14,45 +14,42 @@ class RedisContainer(
     dockerImageName: String = IMAGE,
 ) : GenericContainer<RedisContainer>(dockerImageName) {
 
-    fun getFreeInstanceUUID(type: String, mapper: ObjectMapper): String {
-        logger.info { "Get free instance UUID" }
-        val instanceUUID: String
-        getResource().use { jedis: Jedis ->
-            when {
-                hasFreeInstance(jedis, type) -> instanceUUID =
-                    popFree(jedis, type, mapper).also { instance: ContainerInstance ->
-                        instance.instanceLockTimeStamp = Instant.now()
-                        pushLock(jedis, type, mapper, instance)
-                    }.instanceUUID
+    private val jedisPool: JedisPool by lazy {
+        JedisPool(JedisPoolConfig(), this.host, this.getMappedPort(PORT))
+    }
 
-                else -> instanceUUID = ContainerInstance().also { instance: ContainerInstance ->
-                    pushLock(jedis, type, mapper, instance)
+    fun getFreeInstanceUUID(type: String, mapper: ObjectMapper): String {
+        jedisPool.resource.use { jedis ->
+            return when {
+                hasFreeInstance(jedis, type) -> popFree(jedis, type, mapper).apply {
+                    instanceLockTimeStamp = Instant.now()
+                    pushLock(jedis, type, mapper, this)
+                }.instanceUUID
+
+                else -> ContainerInstance().apply {
+                    pushLock(jedis, type, mapper, this)
                 }.instanceUUID
             }
         }
-        closePool()
-        return instanceUUID
     }
 
     fun freeInstance(type: String, mapper: ObjectMapper, instanceUUID: String) {
-        logger.info { "Releasing instance : $instanceUUID" }
-        getResource().use { jedis ->
-            for (i in 1..lockLength(jedis, type)) {
+        jedisPool.resource.use { jedis ->
+            repeat(lockLength(jedis, type).toInt()) {
                 popLock(jedis, type, mapper).also {
-                    when (it.instanceUUID) {
-                        instanceUUID -> pushFree(jedis, type, mapper, it)
-                        else -> pushLock(jedis, type, mapper, it)
+                    if (it.instanceUUID == instanceUUID) {
+                        pushFree(jedis, type, mapper, it)
+                    } else {
+                        pushLock(jedis, type, mapper, it)
                     }
                 }
             }
         }
-        closePool()
     }
 
     fun freeInstances(type: String, mapper: ObjectMapper) {
-        logger.info { "Attempt to release instance" }
-        getResource().use { jedis ->
-            for (i in 1..lockLength(jedis, type)) {
+        jedisPool.resource.use { jedis ->
+            repeat(lockLength(jedis, type).toInt()) {
                 popLock(jedis, type, mapper).also {
                     when {
                         it.isInstanceLockTimeStampExpired() -> pushFree(jedis, type, mapper, it)
@@ -62,34 +59,16 @@ class RedisContainer(
                 }
             }
         }
-        closePool()
     }
-
-    private fun getPool(): JedisPool {
-        return JedisPool(
-            JedisPoolConfig(),
-            this.host,
-            this.getMappedPort(PORT)
-        )
-    }
-
-    private fun closePool() = getPool().close()
-
-    private fun getResource(): Jedis = getPool().resource
 
     private fun killInstance(containerInstance: ContainerInstance) {
-        logger.info { "Should kill instance: $containerInstance" }
         killInstance(containerInstance.instanceUUID)
     }
 
     fun killInstance(instanceUUID: String) {
-        DockerUtils.getContainerFromLabel(
-            getReuseLabel(), instanceUUID
-        ).run {
-            if (this != null) {
-                DockerUtils.stopContainer(this.id)
-                DockerUtils.killContainer(this.id)
-            }
+        DockerUtils.getContainerFromLabel(getReuseLabel(), instanceUUID)?.id?.let { containerId ->
+            DockerUtils.stopContainer(containerId)
+            DockerUtils.killContainer(containerId)
         }
     }
 

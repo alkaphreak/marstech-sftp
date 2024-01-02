@@ -9,13 +9,8 @@ import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
-import io.kotest.extensions.spring.SpringExtension
-import io.kotest.extensions.spring.SpringTestExtension
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.core.io.DefaultResourceLoader
 import org.springframework.core.io.ResourceLoader
 import java.nio.file.Path
 import java.util.*
@@ -26,47 +21,41 @@ import kotlin.io.path.isRegularFile
 private val logger: KLogger = KotlinLogging.logger {}
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class SftpFileConnectorServiceImplTest : StringSpec() {
+class SftpFileConnectorServiceImplTest(
+    private val objectMapper: ObjectMapper,
+    private val resourceLoader: ResourceLoader
+) : StringSpec() {
 
-    @Autowired
-    lateinit var objectMapper: ObjectMapper
-
-    override fun extensions(): List<SpringTestExtension> = listOf(SpringExtension)
-
-    var resourceLoader: ResourceLoader = DefaultResourceLoader()
-
-    lateinit var redisContainer: RedisContainer
-    lateinit var sftpContainer: SftpContainer
-
-    lateinit var knownHostsFilePathString: String
-    lateinit var connectionStrategy: ConnectionStrategy
+    private lateinit var redisContainer: RedisContainer
+    private lateinit var sftpContainer: SftpContainer
+    private lateinit var knownHostsFilePathString: String
+    private lateinit var connectionStrategy: ConnectionStrategy
 
     /**
      * Run once before the first test method for all tests in class
      */
     override suspend fun beforeSpec(spec: Spec) {
-        super.beforeSpec(spec)
-
-        redisContainer = RedisContainer().startOrReuseUniqueInstance(
-            instanceUUID = RedisContainer.INSTANCE_UUID,
-            exposedPorts = intArrayOf(RedisContainer.PORT),
-            logger = logger.toSlf4j2()
-        ) as RedisContainer
+        redisContainer = RedisContainer().apply {
+            startOrReuseUniqueInstance(
+                RedisContainer.INSTANCE_UUID,
+                exposedPorts = intArrayOf(RedisContainer.PORT),
+                logger = logger.toSlf4j()
+            )
+        }
     }
 
     /**
      * Run before each test method
      */
     override suspend fun beforeTest(testCase: TestCase) {
-        super.beforeTest(testCase)
-
-        val instanceUUID: String = redisContainer.getFreeInstanceUUID(SftpContainer.TYPE, objectMapper)
-        sftpContainer = (SftpContainer().startOrReuseUniqueInstance(
-            instanceUUID = instanceUUID,
-            exposedPorts = intArrayOf(SftpContainer.PORT),
-            logger = logger.toSlf4j2()
-        ) as SftpContainer).also {
-            it.instanceUUID = instanceUUID
+        val instanceUUID = redisContainer.getFreeInstanceUUID(SftpContainer.TYPE, objectMapper)
+        sftpContainer = SftpContainer().apply {
+            startOrReuseUniqueInstance(
+                instanceUUID,
+                exposedPorts = intArrayOf(SftpContainer.PORT),
+                logger = logger.toSlf4j()
+            )
+            this.instanceUUID = instanceUUID
         }
         knownHostsFilePathString = resourceLoader.getResource("classpath:ssh/known_hosts").file.toPath().toString()
         connectionStrategy = SftpPrivateKeyConnectionStrategyImpl(
@@ -79,34 +68,20 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
     }
 
     override suspend fun afterTest(testCase: TestCase, result: TestResult) {
-        super.afterTest(testCase, result)
-
-        redisContainer.freeInstance(
-            type = SftpContainer.TYPE,
-            mapper = objectMapper,
-            instanceUUID = sftpContainer.instanceUUID
-        )
+        redisContainer.freeInstance(SftpContainer.TYPE, objectMapper, sftpContainer.instanceUUID)
     }
 
     override suspend fun afterSpec(spec: Spec) {
-        super.afterSpec(spec)
-
-        redisContainer.freeInstances(
-            type = SftpContainer.TYPE,
-            mapper = objectMapper
-        )
+        redisContainer.freeInstances(SftpContainer.TYPE, objectMapper)
     }
 
     init {
         "Upload and download should work without exception with private key" {
             // Given
-            val remoteFilePath: Path = Path("/share")
-                .resolve("${UUID.randomUUID()}.tmp")
-            val downloadedFilePath: Path = createOutputTempDirectory()
-                .resolve(remoteFilePath.fileName)
-            val connection: Connection = SftpFileConnectorServiceImpl(
-                knownHostsFilePath = knownHostsFilePathString
-            ).connect(connectionStrategy)
+            val remoteFilePath = Path("/share/${UUID.randomUUID()}.tmp")
+            val downloadedFilePath: Path = createOutputTempDirectory().resolve(remoteFilePath.fileName)
+            val connection: Connection =
+                SftpFileConnectorServiceImpl(knownHostsFilePathString).connect(connectionStrategy)
 
             // When
             connection.uploadFile(
@@ -132,36 +107,17 @@ class SftpFileConnectorServiceImplTest : StringSpec() {
         }
 
         "Test Redis Container" {
-            redisContainer shouldNotBe null
-            val uuids: List<String> = listOf(
-                redisContainer.getFreeInstanceUUID(
-                    type = SftpContainer.TYPE,
-                    mapper = objectMapper
-                ),
-                redisContainer.getFreeInstanceUUID(
-                    type = SftpContainer.TYPE,
-                    mapper = objectMapper
-                ),
-                redisContainer.getFreeInstanceUUID(
-                    type = SftpContainer.TYPE,
-                    mapper = objectMapper
-                )
-            )
-            uuids.size shouldBe 3
-            uuids.filter { false }.size shouldBe 0
-
-            uuids.forEach {
-                redisContainer.freeInstance(
-                    type = SftpContainer.TYPE,
-                    mapper = objectMapper,
-                    instanceUUID = it
-                )
+            val uuids = (1..3).map {
+                redisContainer.getFreeInstanceUUID(SftpContainer.TYPE, objectMapper)
             }
+            uuids.size shouldBe 3
 
-            redisContainer.killInstance(
-                redisContainer.getFreeInstanceUUID(type = SftpContainer.TYPE, mapper = objectMapper)
-                    .also {}
-            )
+            uuids.forEach { uuid ->
+                redisContainer.freeInstance(SftpContainer.TYPE, objectMapper, uuid)
+
+                // TODO find why it doesn't work
+                redisContainer.killInstance(uuid)
+            }
         }
     }
 }

@@ -6,40 +6,29 @@ import org.slf4j.Logger
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.output.Slf4jLogConsumer
 import org.testcontainers.images.PullPolicy
-import org.testcontainers.utility.LogUtils
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
-import java.util.*
 
 fun createInputTempFile(): Path =
-    Files.createTempFile(
-        Files.createTempDirectory("files-in"),
-        "file-in",
-        null
-    )
+    Files.createTempFile("file-in", ".tmp")
 
 fun createOutputTempDirectory(): Path =
     Files.createTempDirectory("files-out")
 
-fun makeTmpFs(folderName: String): MutableMap<String, String> =
-    Collections.singletonMap(
-        Files.createTempDirectory(folderName).toString(),
-        "rw"
-    )
+fun makeTmpFs(folderName: String): Map<String, String> =
+    mapOf(Files.createTempDirectory(folderName).toString() to "rw")
 
 fun getReuseLabel(): String = "reuse.UUID"
 
 fun GenericContainer<*>.startOrReuseUniqueInstance(
-    instanceUUID: String? = null,
-    tmpFolderName: String? = null,
+    instanceUUID: String,
+    tmpFolderName: String = instanceUUID,
     env: Map<String, String> = emptyMap(),
     vararg exposedPorts: Int,
     logger: Logger? = null
 ): GenericContainer<*> {
-    // Container can have tmpfs mounts for storing data in host memory
-    // useful to speed up database tests.
-    withTmpFs(makeTmpFs(tmpFolderName ?: instanceUUID!!))
+    withTmpFs(makeTmpFs(tmpFolderName))
     env.forEach { addEnv(it.key, it.value) }
     if (exposedPorts.isNotEmpty()) withExposedPorts(*exposedPorts.toTypedArray())
     withImagePullPolicy(PullPolicy.ageBased(Duration.ofDays(30)))
@@ -47,23 +36,12 @@ fun GenericContainer<*>.startOrReuseUniqueInstance(
     withReuse(true)
     withLabel(getReuseLabel(), instanceUUID)
     start()
-    if (logger != null) {
-        LogUtils.followOutput(
-            this.dockerClient,
-            this.containerId,
-            Slf4jLogConsumer(logger).withSeparateOutputStreams()
-        )
+    logger?.let {
+        followOutput(Slf4jLogConsumer(it).withSeparateOutputStreams())
     }
     return this
 }
 
 // Extension function to safely convert KLogger to org.slf4j.Logger using reflection
-fun KLogger.toSlf4j(): Logger {
-    val kLoggerClass = this::class.java
-    val field = kLoggerClass.superclass.getDeclaredField("logger")
-    field.isAccessible = true
-    return (field.get(this) as? Logger)!!
-}
-
 @Suppress("UNCHECKED_CAST")
-fun KLogger.toSlf4j2(): Logger = (this as DelegatingKLogger<Logger>).underlyingLogger
+fun KLogger.toSlf4j(): Logger = (this as DelegatingKLogger<Logger>).underlyingLogger

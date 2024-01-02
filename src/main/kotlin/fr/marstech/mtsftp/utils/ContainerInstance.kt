@@ -9,14 +9,18 @@ class ContainerInstance(
     private val instanceCreationTimeStamp: Instant = Instant.now(),
     var instanceLockTimeStamp: Instant = Instant.now()
 ) {
-    fun isInstanceCreationTimeStampExpired(): Boolean =
-        Duration.between(instanceCreationTimeStamp, Instant.now()) > instanceCreationTimeStampTTL
+    fun isInstanceCreationTimeStampExpired(): Boolean {
+        val now = Instant.now()
+        return Duration.between(instanceCreationTimeStamp, now) > instanceCreationTimeStampTTL
+    }
 
-    fun isInstanceLockTimeStampExpired(): Boolean =
-        Duration.between(instanceLockTimeStamp, Instant.now()) > instanceLockTimeStampTTL
+    fun isInstanceLockTimeStampExpired(): Boolean {
+        val now = Instant.now()
+        return Duration.between(instanceLockTimeStamp, now) > instanceLockTimeStampTTL
+    }
 
     companion object {
-        val instanceCreationTimeStampTTL: Duration = Duration.ofMinutes(30)
-        val instanceLockTimeStampTTL: Duration = Duration.ofMinutes(5)
+        private val instanceCreationTimeStampTTL: Duration = Duration.ofMinutes(30)
+        private val instanceLockTimeStampTTL: Duration = Duration.ofMinutes(5)
     }
 }

@@ -4,44 +4,40 @@ import com.jcraft.jsch.ChannelSftp
 import com.jcraft.jsch.Session
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.nio.file.Path
-import java.util.stream.Stream
 import kotlin.io.path.pathString
 
 private val logger = KotlinLogging.logger {}
 
 class SftpConnectionImpl(private val session: Session) : Connection {
 
-    private fun channelSftp(): ChannelSftp =
-        session.openChannel("sftp")
-            .apply { connect() } as ChannelSftp
+    private val channelSftp: ChannelSftp by lazy {
+        (session.openChannel("sftp") as ChannelSftp).apply { connect() }
+    }
 
     override fun uploadFile(localFilePath: Path, remoteFilePath: Path) {
-        channelSftp().apply {
-            logger.debug { "${"upload file from {} to {}"} $localFilePath $remoteFilePath" }
-            put(localFilePath.pathString, remoteFilePath.pathString)
-            exit()
-            logger.debug { "file uploaded" }
-        }
+        logger.debug { "upload file from $localFilePath to $remoteFilePath" }
+        channelSftp.put(localFilePath.pathString, remoteFilePath.pathString)
+        logger.debug { "file uploaded" }
     }
 
     override fun downloadFile(remoteFilePath: Path, localFilePath: Path) {
-        channelSftp().apply {
-            logger.debug { "${"download file from {} to {}"} $remoteFilePath $localFilePath" }
-            get(remoteFilePath.pathString, localFilePath.pathString)
-            exit()
-            logger.debug { "file downloaded" }
-        }
+        logger.debug { "download file from $remoteFilePath to $localFilePath" }
+        channelSftp.get(remoteFilePath.pathString, localFilePath.pathString)
+        logger.debug { "file downloaded" }
     }
 
-    override fun listRemoteFiles(remoteDirectoryPath: Path): Set<Path> = (
-            channelSftp().apply {
-                logger.debug { "${"listing files from {}"} $remoteDirectoryPath" }
-                cd(remoteDirectoryPath.pathString)
-            }.ls(remoteDirectoryPath.pathString).stream() as Stream<ChannelSftp.LsEntry>
-            ).map { entry -> remoteDirectoryPath.resolve(entry.filename) }
-        .toList()
-        .toSet()
-        .apply<Set<Path>> { logger.debug { "end file list. Found $size files" } }
+    override fun listRemoteFiles(remoteDirectoryPath: Path): Set<Path> {
+        logger.debug { "listing files from $remoteDirectoryPath" }
+        return channelSftp.ls(remoteDirectoryPath.pathString).asSequence()
+            .filterIsInstance<ChannelSftp.LsEntry>()
+            .map { entry -> remoteDirectoryPath.resolve(entry.filename) }
+            .toSet()
+            .also { logger.debug { "end file list. Found ${it.size} files" } }
+    }
 
-    override fun disconnect() = session.disconnect()
+    override fun disconnect() = try {
+        channelSftp.exit()
+    } finally {
+        session.disconnect()
+    }
 }
