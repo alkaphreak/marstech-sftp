@@ -3,11 +3,14 @@ package fr.marstech.mtsftp.utils
 import com.github.dockerjava.api.DockerClient
 import com.github.dockerjava.api.model.Container
 import com.github.dockerjava.core.DockerClientBuilder
+import com.github.dockerjava.netty.NettyDockerCmdExecFactory
+
 
 object DockerUtils {
 
     private fun dockerClient(): DockerClient = DockerClientBuilder
         .getInstance()
+        .withDockerCmdExecFactory(NettyDockerCmdExecFactory())
         .build()
 
     fun getContainerFromLabel(labelKey: String, labelValue: String): Container? = dockerClient()

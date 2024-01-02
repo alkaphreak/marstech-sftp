@@ -50,12 +50,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.guava/guava
     implementation("com.google.guava:guava:32.1.3-jre")
 
-    // https://mvnrepository.com/artifact/javax.ws.rs/javax.ws.rs-api
-    implementation("javax.ws.rs:javax.ws.rs-api:2.1.1")
-
-    // Exclude javax.ws.rs-api from specific dependencies if they bring conflicting versions
     implementation("com.github.docker-java:docker-java:3.3.4")
     implementation("com.github.docker-java:docker-java-transport-httpclient5:3.3.4")
+
+    implementation("javax.ws.rs:javax.ws.rs-api:2.1.1")
 }
 
 tasks.withType<KotlinCompile> {
