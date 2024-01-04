@@ -19,11 +19,16 @@ object DockerUtils {
             }
     }
 
-    fun getContainerFromLabel(labelKey: String, labelValue: String): Container? =
+    fun getContainerListFromLabel(labelKey: String): List<Container> =
         dockerClient.listContainersCmd()
-            .withShowAll(true)
+            .withShowAll(false)
             .exec()
-            .find { it.labels[labelKey] == labelValue }.also {
+            .filter { it.labels.containsKey(labelKey) }
+
+    fun getContainerFromLabel(labelKey: String, labelValue: String): Container? =
+        getContainerListFromLabel(labelKey)
+            .firstOrNull { it.labels[labelKey] == labelValue }
+            .also {
                 if (it != null) logger.info { "Container found with label $labelKey=$labelValue" }
             }
 

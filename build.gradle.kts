@@ -34,7 +34,7 @@ dependencies {
     // https://mvnrepository.com/artifact/io.github.oshai/kotlin-logging-jvm
     implementation("io.github.oshai:kotlin-logging-jvm:6.0.1")
 
-    implementation("com.github.mwiede:jsch:0.2.13")
+    implementation("com.github.mwiede:jsch:0.2.16")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 

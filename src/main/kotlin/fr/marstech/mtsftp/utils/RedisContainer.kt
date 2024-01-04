@@ -1,6 +1,7 @@
 package fr.marstech.mtsftp.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.dockerjava.api.model.Container
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.testcontainers.containers.GenericContainer
 import redis.clients.jedis.Jedis
@@ -71,6 +72,8 @@ class RedisContainer(
             DockerUtils.killContainer(containerId)
         }
     }
+
+    fun list(): List<Container> = DockerUtils.getContainerListFromLabel(getReuseLabel())
 
     private fun popLock(
         jedis: Jedis,

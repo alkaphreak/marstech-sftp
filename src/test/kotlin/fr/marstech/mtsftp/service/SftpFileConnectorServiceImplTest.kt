@@ -107,10 +107,12 @@ class SftpFileConnectorServiceImplTest(
         }
 
         "Test Redis Container" {
-            val uuids = (1..3).map {
+            val uuids: List<String> = (1..3).map {
                 redisContainer.getFreeInstanceUUID(SftpContainer.TYPE, objectMapper)
             }
             uuids.size shouldBe 3
+
+            redisContainer.list().filter { it.labels[getReuseLabel()] in uuids }.size shouldBe 3
 
             uuids.forEach { uuid ->
                 redisContainer.freeInstance(SftpContainer.TYPE, objectMapper, uuid)
