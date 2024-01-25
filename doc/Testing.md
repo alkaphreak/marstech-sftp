@@ -3,6 +3,9 @@
 Second part of our test implem of **JSch** with **Kotlin**, **Kotest**, **Testcontainers** and **Spring boot Native**
 serie.
 
+![](./_500dd8c7-e798-4ee8-8856-8a6e818756c7.jpeg)
+*Credit: https://www.bing.com/?FORM=GENBHP*
+
 ## Dependencies
 
 For testing with Kotlin, we will use the `Kotest` testing framework and `TestContainers`, an open-source library for
